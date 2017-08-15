@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:aop="http://www.springframework.org/schema/aop" 
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	 http://www.springframework.org/schema/beans/spring-beans.xsd 
+	 http://www.springframework.org/schema/aop 
+	 http://www.springframework.org/schema/aop/spring-aop.xsd
+	 http://www.springframework.org/schema/tx 
+	 http://www.springframework.org/schema/tx/spring-tx.xsd 
+	 http://www.springframework.org/schema/context
+	 http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+	 <!-- 扫描service自动注入为bean -->   
+	 <context:component-scan base-package="org.crazyit.app.*" />  
+	  
+	<!-- pre:通过配置文件动态的给数据源参数赋值 -->
+	<bean
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location"
+			value="classpath:config.properties"></property>
+	</bean>
+	
+	<!-- 1.配置数据源[连接池] -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${driverClass}"></property>
+		<property name="jdbcUrl" value="${jdbcUrl}"></property>
+		<property name="user" value="${user}"></property>
+		<property name="password" value="${password}"></property>
+		<property name="maxPoolSize" value="5"></property>
+		<property name="minPoolSize" value="2"></property>
+	</bean>
+	<!-- 2.配置sf工厂 -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<!-- <property name="mappingDirectoryLocations" value="classpath:com/zpark/hibernate"></property> -->
+		<!-- 扫描hibernate注解配置的entity -->
+		<property name="packagesToScan" value="org.crazyit.app.domain" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">${hibernate.dialect}</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<prop key="javax.persistence.validation.mode">none</prop>
+			</props>
+		</property>
+	</bean>
+	
+ <!-- 配置事务管理器 -->  
+    <bean id="transactionManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager">  
+        <property name="sessionFactory" ref="sessionFactory" />  
+    </bean> 
+	<!-- 配置事务增强处理Bean，指定事务管理器 -->  
+    <tx:advice id="transactionAdvice" transaction-manager="transactionManager">  
+        <!-- 配置详细事务处理语义 -->  
+        <tx:attributes>  
+            <tx:method name="insert*" propagation="REQUIRED" />  
+            <tx:method name="update*" propagation="REQUIRED" />  
+            <tx:method name="delete*" propagation="REQUIRED" />  
+  
+            <tx:method name="get*" propagation="SUPPORTS" read-only="true" />  
+            <tx:method name="find*" propagation="SUPPORTS" read-only="true" />  
+            <tx:method name="select*" propagation="SUPPORTS" read-only="true" />  
+            <tx:method name="load*" propagation="SUPPORTS" read-only="true" />  
+  
+            <!-- 其他采用默认事务方式 -->  
+            <tx:method name="*" />  
+  
+        </tx:attributes>  
+    </tx:advice>  
+	 <!-- Spring aop事务管理 -->  
+    <aop:config>  
+        <!-- 配置切入点 -->  
+        <aop:pointcut id="transactionPointcut" expression="execution(* org.crazyit.app.service.serviceImpl.*.*(..))" />  
+        <!-- 指定在txAdvice切入点应用txAdvice事务增强处理 -->  
+        <aop:advisor pointcut-ref="transactionPointcut" advice-ref="transactionAdvice" />  
+    </aop:config>  
+</beans>

@@ -1,0 +1,5 @@
+org\crazyit\app\domain\User.class
+org\crazyit\app\action\LoginAction.class
+org\crazyit\app\domain\News.class
+org\crazyit\app\service\UserManager.class
+org\crazyit\app\dao\BaseDao.class
